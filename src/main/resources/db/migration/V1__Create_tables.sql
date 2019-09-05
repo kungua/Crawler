@@ -11,7 +11,7 @@ create table NEWS
     id          bigint primary key auto_increment,
     title       text,
     content     text,
-    url         varchar(100),
+    url         varchar(1000),
     created_at  timestamp,
     modified_at timestamp
 );
