@@ -1,5 +1,6 @@
 package com.github.kungua;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -11,38 +12,84 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class Main {
+    private static final String USER_NAME = "root";
+    private static final String PASSWORD = "root";
 
+    private static List<String> loadUrlsFromDatabase(Connection connection, String sql) throws SQLException {
+        List<String> results = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                results.add(resultSet.getString(1));
+            }
+        }
+        return results;
+    }
+
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
     public static void main(String[] args) throws Exception {
-//        待处理的链接池
-        List<String> linkPool = new ArrayList<>();
-//        已经处理的链接池
-        Set<String> processedLinks = new HashSet<>();
-        linkPool.add("https://sina.cn");
-
+        Connection connection = DriverManager.getConnection("jdbc:h2:file:E:\\hcspx\\tp\\Crawler\\news", USER_NAME, PASSWORD);
         while (true) {
+            List<String> linkPool = loadUrlsFromDatabase(connection, "select *\n" +
+                    "from LINKS_TO_BE_PROCESSED;");
+
             if (linkPool.isEmpty()) {
                 break;
             }
+
             String link = linkPool.remove(linkPool.size() - 1);
-            if (processedLinks.contains(link)) {
+            insertLinkIntoDatabase(connection, link, "delete\n" +
+                    "from LINKS_TO_BE_PROCESSED\n" +
+                    "where LINK = ?");
+            if (isLinkProcessed(connection, link)) {
                 continue;
             }
             if (isInterestingLink(link)) {
                 Document doc = HttpGetAndParseHtml(link);
-                doc.select("a").stream().map(aTag -> aTag.attr("href")).forEach(linkPool::add);
+                parseUrlsFromPageAndStoreIntoDatabase(connection, linkPool, doc);
                 storeIntoDatabaseIfItIsNewsPage(doc);
-                processedLinks.add(link);
-            } else {
-                continue;
+                insertLinkIntoDatabase(connection, link, "insert into LINKS_TO_ALREADY_PROCESSED (LINK) values (?)");
             }
         }
     }
+
+    private static void parseUrlsFromPageAndStoreIntoDatabase(Connection connection, List<String> linkPool, Document doc) throws SQLException {
+        for (Element aTag : doc.select("a")) {
+            String href = aTag.attr("href");
+            linkPool.add(href);
+            insertLinkIntoDatabase(connection, href, "insert into LINKS_TO_BE_PROCESSED (LINK) values (?)");
+        }
+    }
+
+    private static boolean isLinkProcessed(Connection connection, String link) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("select *\n" +
+                "from LINKS_TO_ALREADY_PROCESSED where LINK = ?")) {
+            statement.setString(1, link);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void insertLinkIntoDatabase(Connection connection, String link, String sql) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, link);
+            statement.executeUpdate();
+        }
+    }
+
 
     private static void storeIntoDatabaseIfItIsNewsPage(Document doc) {
         ArrayList<Element> articleTags = doc.select("article");
