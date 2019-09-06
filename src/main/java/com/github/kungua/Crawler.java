@@ -46,14 +46,13 @@ public class Crawler extends Thread {
     private void parseUrlsFromPageAndStoreIntoDatabase(Document doc) throws SQLException {
         for (Element aTag : doc.select("a")) {
             String href = aTag.attr("href");
-            if (href.startsWith("//")) {
-                href = "https:" + href;
-            }
+            href = DownloadPictureHelper.wrapLinkWithProtocolIfLinkNotHas(href);
             if (!href.toLowerCase().startsWith("javascript")) {
                 dao.insertLinkToBeProcessed(href);
             }
         }
     }
+
 
     private void storeIntoDatabaseIfItIsNewsPage(Document doc, String link) throws SQLException {
         ArrayList<Element> articleTags = doc.select("article");
@@ -61,10 +60,22 @@ public class Crawler extends Thread {
             for (Element articleTag :
                     articleTags) {
                 String title = articleTag.child(0).text();
-                String content = articleTag.select("p").stream().map(Element::text).collect(Collectors.joining("\n"));
-                System.out.println("title = " + title);
+                String content = doc.select("article").html();
+                parseAndDownloadImage(doc, title);
                 dao.insertNewsIntoDatabase(link, title, content);
             }
+        }
+    }
+
+    private void parseAndDownloadImage(Document doc, String title) {
+        // 将相关图片下载到目录中
+        ArrayList<Element> imgTagList = doc.select("article").select("p > img");
+        // java for each 竟然不提供 index
+        for (Element imgTag :
+                imgTagList) {
+            int index = imgTagList.indexOf(imgTag);
+            String url = DownloadPictureHelper.wrapLinkWithProtocolIfLinkNotHas(imgTag.attr("src"));
+            DownloadPictureHelper.downloadPicture(url, title, index);
         }
     }
 
