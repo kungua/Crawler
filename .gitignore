@@ -1,5 +1,6 @@
 *.iml
 *.db
+/images/
 /target/
 # Editor
 .idea
