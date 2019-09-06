@@ -15,27 +15,32 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-public class Crawler {
-    private CrawlerDao dao = new MyBatisCrawlerDao();
+public class Crawler extends Thread {
+    private CrawlerDao dao;
 
-    public void run() throws Exception {
-        String link;
-//            先从数据库里拿出来一个链接(拿出来并从数据库中删除掉) 准备处理之
-        while ((link = dao.getNextLinkThenDelete()) != null) {
-            if (dao.isLinkProcessed(link)) {
-                continue;
-            }
-            if (isInterestingLink(link)) {
-                Document doc = HttpGetAndParseHtml(link);
-                parseUrlsFromPageAndStoreIntoDatabase(doc);
-                storeIntoDatabaseIfItIsNewsPage(doc, link);
-                dao.insertProcessedLink(link);
-            }
-        }
+    public Crawler(CrawlerDao dao) {
+        this.dao = dao;
     }
 
-    public static void main(String[] args) throws Exception {
-        new Crawler().run();
+    @Override
+    public void run() {
+        try {
+            String link;
+//            先从数据库里拿出来一个链接(拿出来并从数据库中删除掉) 准备处理之
+            while ((link = dao.getNextLinkThenDelete()) != null) {
+                if (dao.isLinkProcessed(link)) {
+                    continue;
+                }
+                if (isInterestingLink(link)) {
+                    Document doc = HttpGetAndParseHtml(link);
+                    parseUrlsFromPageAndStoreIntoDatabase(doc);
+                    storeIntoDatabaseIfItIsNewsPage(doc, link);
+                    dao.insertProcessedLink(link);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void parseUrlsFromPageAndStoreIntoDatabase(Document doc) throws SQLException {
