@@ -37,4 +37,10 @@ public class News {
     public void setTitle(String title) {
         this.title = title;
     }
+
+    public News(String url, String content, String title) {
+        this.url = url;
+        this.content = content;
+        this.title = title;
+    }
 }

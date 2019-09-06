@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.kungua.MyMapper">
+    <select id="selectNextAvailableLink" resultType="String">
+        select LINK
+        from LINKS_TO_BE_PROCESSED
+        limit 1
+    </select>
+    <delete id="deleteLink" parameterType="String">
+        delete
+        from LINKS_TO_BE_PROCESSED
+        where LINK = #{link}
+    </delete>
+    <insert id="insertNews"
+            parameterType="com.github.kungua.News">
+        insert into NEWS (title, content, url, created_at, modified_at)
+        values (#{title}, #{content}, #{url}, now(), now())
+    </insert>
+    <select id="countLink" parameterType="String" resultType="int">
+        select count(LINK)
+        from LINKS_TO_ALREADY_PROCESSED
+        where LINK = #{link}
+    </select>
+    <insert id="insertLink" parameterType="hashmap">
+        insert into
+        <choose>
+            <when test="tableName == 'LINKS_TO_ALREADY_PROCESSED'">
+                LINKS_TO_ALREADY_PROCESSED
+            </when>
+            <otherwise>
+                LINKS_TO_BE_PROCESSED
+            </otherwise>
+        </choose>
+        (LINK) values (#{link})
+    </insert>
+</mapper>

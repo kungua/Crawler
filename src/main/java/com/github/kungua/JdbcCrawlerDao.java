@@ -14,6 +14,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
     private static final String PASSWORD = "root";
     private final Connection connection;
 
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
     public JdbcCrawlerDao() {
         try {
             this.connection = DriverManager.getConnection("jdbc:h2:file:E:\\hcspx\\tp\\Crawler\\news", USER_NAME, PASSWORD);
