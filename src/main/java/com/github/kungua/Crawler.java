@@ -29,7 +29,7 @@ public class Crawler {
                 Document doc = HttpGetAndParseHtml(link);
                 parseUrlsFromPageAndStoreIntoDatabase(doc);
                 storeIntoDatabaseIfItIsNewsPage(doc, link);
-                dao.updateDatabase(link, "insert into LINKS_TO_ALREADY_PROCESSED (LINK) values (?)");
+                dao.insertProcessedLink(link);
             }
         }
     }
@@ -45,7 +45,7 @@ public class Crawler {
                 href = "https:" + href;
             }
             if (!href.toLowerCase().startsWith("javascript")) {
-                dao.updateDatabase(href, "insert into LINKS_TO_BE_PROCESSED (LINK) values (?)");
+                dao.insertLinkToBeProcessed(href);
             }
         }
     }
