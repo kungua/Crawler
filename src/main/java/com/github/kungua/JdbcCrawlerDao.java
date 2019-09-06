@@ -1,13 +1,20 @@
 package com.github.kungua;
 
-import java.sql.*;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-public class DatabaseAccessObject {
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class JdbcCrawlerDao implements CrawlerDao {
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
     private static final String USER_NAME = "root";
     private static final String PASSWORD = "root";
     private final Connection connection;
 
-    public DatabaseAccessObject() {
+    public JdbcCrawlerDao() {
         try {
             this.connection = DriverManager.getConnection("jdbc:h2:file:E:\\hcspx\\tp\\Crawler\\news", USER_NAME, PASSWORD);
         } catch (SQLException e) {
@@ -15,7 +22,7 @@ public class DatabaseAccessObject {
         }
     }
 
-    private String getNextLink(String sql) throws SQLException {
+    public String getNextLink(String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {

@@ -1,6 +1,5 @@
 package com.github.kungua;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -17,9 +16,8 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class Crawler {
-    private DatabaseAccessObject dao = new DatabaseAccessObject();
+    private CrawlerDao dao = new JdbcCrawlerDao();
 
-    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
     public void run() throws Exception {
         String link;
 //            先从数据库里拿出来一个链接(拿出来并从数据库中删除掉) 准备处理之
